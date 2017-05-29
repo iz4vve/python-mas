@@ -12,7 +12,7 @@ LOG = get_logger(__name__)
 
 
 def main():
-    num_hosts = 2
+    num_hosts = 10000
 
     cluster_container = aiomas.Container.create(("localhost", 5554))
     agents_container = aiomas.Container.create(('localhost', 5555))
@@ -35,6 +35,8 @@ def main():
     cluster = Env.ClusterTelemetryAgent(cluster_container, num_hosts, monitor)
 
     try:
+        LOG.info("Spawning agents")
+        LOG.info(f"Starting Telemetry Agent: {repr(cluster)}")
         aiomas.run(until=cluster.run_cluster())
     except KeyboardInterrupt:
         LOG.info("Received SIGKILL, shutting down gently...")
