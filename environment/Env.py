@@ -27,7 +27,7 @@ class Host(object):
         self._unique_id = unique_id
         self.cluster_id = cluster_id
         self.__threshold = 99
-        self.__min_threshold = 5
+        self.__min_threshold = 1
 
         self.cpu = 0.0
         self.mem = 0.0
@@ -73,7 +73,7 @@ class Host(object):
 
         problems = [
             (name, value) for name, value in zip(self.checks, values)
-            if value > self.__threshold or value < self.__min_threshold
+            if not self.__min_threshold < value < self.__threshold
         ] + [
             (name, value) for name, value in zip(self.bools, bool_values)
             if not value
@@ -96,21 +96,36 @@ class Host(object):
 
 
 class ClusterTelemetryAgent(aiomas.Agent):
+    """
+    Agent that monitors hosts in clusters and emits a "problem" event when a
+    host reports issues.
+    """
+    # mock cluster ids...
+    __possible_clusters = ("ESX0001", "ESX0002", "ESX0003")
 
-    def __init__(self, container, num_hosts, monitor_agent,
-                 cluster_id=uuid.uuid4()):
+    def __init__(self, container, num_hosts, monitor_agent):
         super().__init__(container)
         self.num_hosts = num_hosts
         self.monitor = monitor_agent
-        self.cluster_id = cluster_id
+        # self.cluster_id = cluster_id
         self.hosts = [
-            Host(uuid.uuid4(), self.cluster_id) for _ in range(self.num_hosts)
+            Host(
+                uuid.uuid4(),
+                random.sample(self.__class__.__possible_clusters, 1)[0]
+            ) for _ in range(self.num_hosts)
         ]
+        LOG.info(
+            f"Started {repr(self)}: {self.num_hosts} hosts in {len(self.hosts)} clusters"
+        )
 
     def __repr__(self):
-        return f"Cluster Agent {self.cluster_id}@{self.addr}"
+        return f"Cluster Telemetry Agent {self.addr}"
 
     def run_cluster(self):
+        """
+        Simulates periodic telemetry collection and checks for anomalies.
+        When anomalies occur, a fix request is sent to the handling agents.
+        """
         while True:
             time.sleep(1)  # TODO switch to async clock to simulate this
                            # this currently gives synchronization problems
@@ -134,7 +149,7 @@ class ClusterTelemetryAgent(aiomas.Agent):
             {
                 "host": str(host.unique_id),
                 "cluster_id": str(host.cluster_id),
-                "cluster_address": self.addr
+                "telemetry_agent_address": self.addr
             }
         )
 
