@@ -25,14 +25,20 @@ class Host(object):
 
     def __init__(self, unique_id):
         self.unique_id = unique_id
+        self.fields = ("cpu", "mem", "disk", "io", "temp", "fan")
+        self.initialize_metrics()
 
-    @staticmethod
-    def telemetry():
-        fields = ("cpu", "mem", "disk", "io", "temp", "fan")
+    def initialize_metrics(self):
+        for metric in self.fields:
+            setattr(self, metric, 0.0)
+
+    def telemetry(self):
         values = np.random.normal(
-            *TELEMETRY_DISTRIBUTION_PARAMETERS, size=len(fields)
+            *TELEMETRY_DISTRIBUTION_PARAMETERS, size=len(self.fields)
         )
-        return zip(fields, values)
+        for metric, value in zip(self.fields, values):
+            setattr(self, metric, value)
+        return zip(self.fields, values)
 
     def pong(self):
         return True if random.random() < 0.9999 else False  # there is a slim chance of non-pingability
@@ -44,13 +50,13 @@ class Host(object):
         LOG.critical("Bouncing host %s", self.unique_id)
 
 
-class Cluster(object):
+class ClusterSimulator(object):
 
     def __init__(self, unique_id):
         self.unique_id = unique_id
         # self.__hosts = dict()
-        self.__hosts = set()
-        self.__hosts_fields = ("cpu", "mem", "disk", "io", "temp", "fan")
+        self.__hosts = dict()
+        # self.__hosts_fields = ("cpu", "mem", "disk", "io", "temp", "fan")
         self.__callbacks = dict()
         self.__problems = dict()
         self.__agents = dict()
@@ -68,109 +74,118 @@ class Cluster(object):
             self.__hosts[agent_type] = agent_address
 
     def add_host(self, host):
-        # if host.unique_id not in self.__hosts:
-        #     LOG.debug("Adding host %s to cluster %s", host.unique_id, self.unique_id)
-        #     self.__hosts[host.unique_id] = host
-        self.__hosts.add(host)
+        if host.unique_id not in self.__hosts:
+            LOG.debug("Adding host %s to cluster %s", host.unique_id, self.unique_id)
+            self.__hosts[host.unique_id] = host
+        # self.__hosts.add(host)
 
-    # def pop_host(self, host_id):
-    #     try:
-    #         self.__hosts.pop(host_id)
-    #     except KeyError:
-    #         LOG.error("Host %s is not in cluster %s", host_id, self.unique_id)
+    def pop_host(self, host_id):
+        try:
+            self.__hosts.pop(host_id)
+        except KeyError:
+            LOG.error("Host %s is not in cluster %s", host_id, self.unique_id)
 
     def ping(self, host_id):
-        return True if random.random() < 0.999 else False
-        # try:
-        #     return self.__hosts[host_id].pong()
-        # except KeyError:
-        #     LOG.error("Host %s is not in cluster %s", host_id, self.unique_id)
-        # except PingError:
-        #     LOG.error("Cannot ping host %s in cluster %s", host_id, self.unique_id)
-        #     return False
-        # return False
+        try:
+            return self.__hosts[host_id].pong()
+        except KeyError:
+            LOG.error("Host %s is not in cluster %s", host_id, self.unique_id)
+        except PingError:
+            LOG.error("Cannot ping host %s in cluster %s", host_id, self.unique_id)
+            return False
+        return False
 
     def ssh(self, host_id):
-        return True if random.random() < 0.99 else False
-        # try:
-        #     return self.__hosts[host_id].pong()
-        # except KeyError:
-        #     LOG.error("Host %s is not in cluster %s", host_id, self.unique_id)
-        # except SSHError:
-        #     LOG.error("Cannot ssh host %s in cluster %s", host_id, self.unique_id)
-        #     return False
-        # return False
+        try:
+            return self.__hosts[host_id].pong()
+        except KeyError:
+            LOG.error("Host %s is not in cluster %s", host_id, self.unique_id)
+        except SSHError:
+            LOG.error("Cannot ssh host %s in cluster %s", host_id, self.unique_id)
+            return False
+        return False
 
     def collect_telemetry(self):
         self.__current_telemetry = {
-            host_id: self.get_host_telemetry(host_id) for host_id in self.__hosts
+            host_id: host.telemetry() for host_id, host in self.__hosts.items()
         }
-        # self.__current_telemetry = {
-        #     host_id: host.telemetry() for host_id, host in self.__hosts.items()
-        # }
 
     def get_host_telemetry(self, host_id):
-        return zip(self.__hosts_fields, np.random.rand(len(self.__hosts_fields)))
-        # try:
-        #     return self.__hosts[host_id].telemetry()
-        # except KeyError:
-        #     LOG.error("Host %s is not in cluster %s", host_id, self.unique_id)
-        # except TelemetryError:
-        #     LOG.error("Cluster %s reports no telemetry available for host %s ", self.unique_id, host_id)
-        #     return None
-        # return None
+        try:
+            return self.__hosts[host_id].telemetry()
+        except KeyError:
+            LOG.error("Host %s is not in cluster %s", host_id, self.unique_id)
+        except TelemetryError:
+            LOG.error("Cluster %s reports no telemetry available for host %s ", self.unique_id, host_id)
+            return None
+        return None
 
     def check_telemetry(self):
         problems = []
         for host_id, telemetry in self.__current_telemetry.items():
             for key, value in telemetry:
                 if value < self.__threshold_low or value > self.__threshold_high:
-                    problems += [(host_id, key, value)]
-            # problem = [(key, value) for key, value in telemetry if self.__threshold_low < value < self.__threshold_high]
-            # if problem:
-            #     problems += [(host_id, prbl) for prbl in 6]
+                    problems += [(self.unique_id, host_id, key, value)]
         self.__problems = problems
+
+    def get_agent(self, agent_type):
+        return self.__agents[agent_type]
 
     def handle_problems(self):
         # parse and send to fixers
         if not self.__problems:
             LOG.debug("No problems found in hosts in cluster %s", self.unique_id)
             return
-        ##TODO handle problems
+        # send report to agents
+        for host_id, problem_type, problem in self.__problems:
+            try:
+                agent = self.get_agent(problem_type)
+            except KeyError:
+                LOG.error("ERROR: agent %s not registered in cluster %s. Ignoring problem...", problem_type, self.unique_id)
+        # TODO handle problems
 
     def step_cluster(self):
-        pass
+        self.collect_telemetry()
+        self.check_telemetry()
+        self.handle_problems()
+
 
 class TelemetryError(Exception):
     pass
 
+
 class SSHError(Exception):
     pass
+
 
 class PingError(Exception):
     pass
 
 
-class TestAgent(aiomas.Agent):
-
-    @aiomas.expose
-    async def asd(self):
-        print("asdasdasd")
-
-
-c = Cluster("clust01")
-
-c.add_host(Host("host1"))
-agents_container = aiomas.Container.create(('localhost', 5555))
-agent = TestAgent(agents_container)
-
-async def asd():
-    callee = await agents_container.connect(agent.addr)
-
-    result = await callee.asd()
-
-aiomas.run(until=asd())
+# class TestAgent(aiomas.Agent):
 #
+#     @aiomas.expose
+#     async def asd(self):
+#         print("asdasdasd")
+#
+#
+# c = ClusterSimulator("clust01")
+#
+# c.add_host("host1")
+# agents_container = aiomas.Container.create(('localhost', 5555))
+# agent = TestAgent(agents_container)
+#
+# async def asd():
+#     callee = await agents_container.connect(agent.addr)
+#
+#     result = await callee.asd()
+#
+# aiomas.run(until=asd())
+#
+
+
+
+
 # class Host(object):
 #     """
 #     Simulates a host behaviour by random changes in the tracked metrics
