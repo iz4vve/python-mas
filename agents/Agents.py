@@ -33,7 +33,7 @@ from util.tools import get_logger
 LOG = get_logger(__name__)
 
 
-class BaseFixer(aiomas.agent, metaclass=abc.ABCMeta):
+class BaseFixer(aiomas.Agent):
 
     def __init__(self, container, gatekeeper_address, cluster_monitor):
         super().__init__(container)
@@ -106,7 +106,7 @@ class FanFixer(BaseFixer):
         pass
 
 
-class Gatekeeper(aiomas.agent):
+class Gatekeeper(aiomas.Agent):
 
     def flag_issue(self, cluster, host, problem):
         pass
