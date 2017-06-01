@@ -13,9 +13,8 @@ import uuid
 
 import aiomas
 
-# from util.tools import get_logger
-import logging
-LOG = logging.getLogger()#get_logger(__name__)
+from util.tools import get_logger
+LOG = get_logger(__name__)
 
 # mean and std of normal distribution
 TELEMETRY_DISTRIBUTION_PARAMETERS = (70, 10)
@@ -41,11 +40,11 @@ class Host(object):
         return zip(self.fields, values)
 
     @staticmethod
-    def pong(self):
+    def pong():
         return True if random.random() < 0.9999 else False  # there is a slim chance of non-pingability
 
     @staticmethod
-    def ssh_ack(self):
+    def ssh_ack():
         return True if random.random() < 0.99 else False  # there is a slim chance of non-sshability
 
     def reboot(self):
@@ -61,7 +60,7 @@ class ClusterSimulator(object):
         self.__problems = dict()
         self.__agents = dict()
         self.__current_telemetry = dict()
-        self.__threshold_high = 99
+        self.__threshold_high = 85
         self.__threshold_low = 5
         self.agents_container = agents_container
         self.monitor = monitor
@@ -74,9 +73,9 @@ class ClusterSimulator(object):
         self.monitor[self.unique_id] = self
 
     def register_fixer(self, agent_type, agent_address):
-        if agent_type not in self.__hosts:
+        if agent_type not in self.__agents:
             LOG.debug("Adding agent %s to cluster %s", agent_type, agent_address)
-            self.__hosts[agent_type] = agent_address
+            self.__agents[agent_type] = agent_address
 
     def add_host(self, host_id):
         if host_id not in self.__hosts:
@@ -130,7 +129,7 @@ class ClusterSimulator(object):
         for host_id, telemetry in self.__current_telemetry.items():
             for key, value in telemetry:
                 if value < self.__threshold_low or value > self.__threshold_high:
-                    problems += [(self.unique_id, host_id, key, value)]
+                    problems += [(host_id, key, value)]
         self.__problems = problems
 
     def get_agent(self, agent_type):
@@ -145,7 +144,7 @@ class ClusterSimulator(object):
         for host_id, problem_type, problem in self.__problems:
             try:
                 agent = self.get_agent(problem_type)
-                self.flag_problem(agent, host_id, problem)
+                aiomas.run(self.flag_problem(agent, host_id, problem))
             except KeyError:
                 LOG.error("ERROR: agent %s not registered in cluster %s. Ignoring problem...", problem_type, self.unique_id)
         # TODO handle problems
@@ -162,12 +161,12 @@ class ClusterSimulator(object):
     def ping_all(self):
         unpingable = filter(lambda x: not x[1], [(host_id, self.ping(host_id)) for host_id in self.__hosts])
         for host_id, ping in unpingable:
-            self.flag_unpingable(host_id)
+            aiomas.run(self.flag_unpingable(host_id))
 
     def test_ssh(self):
         not_sshable = filter(lambda x: not x[1], [(host_id, self.ping(host_id)) for host_id in self.__hosts])
         for host_id, ssh in not_sshable:
-            self.flag_not_sshable(host_id)
+            aiomas.run(self.flag_not_sshable(host_id))
 
     async def flag_unpingable(self, host_id):
         try:
