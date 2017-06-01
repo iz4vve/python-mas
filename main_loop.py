@@ -53,11 +53,11 @@ def main():
     # agents instantiation
     gatekeeper = agents.Gatekeeper(agents_container, MONITOR)
     cpu_fixer = agents.CpuFixer(agents_container, gatekeeper.addr, MONITOR)
-    mem_fixer = agents.CpuFixer(agents_container, gatekeeper.addr, MONITOR)
-    disk_fixer = agents.CpuFixer(agents_container, gatekeeper.addr, MONITOR)
-    io_fixer = agents.CpuFixer(agents_container, gatekeeper.addr, MONITOR)
-    temp_fixer = agents.CpuFixer(agents_container, gatekeeper.addr, MONITOR)
-    fan_fixer = agents.CpuFixer(agents_container, gatekeeper.addr, MONITOR)
+    mem_fixer = agents.MemFixer(agents_container, gatekeeper.addr, MONITOR)
+    disk_fixer = agents.DiskFixer(agents_container, gatekeeper.addr, MONITOR)
+    io_fixer = agents.IOFixer(agents_container, gatekeeper.addr, MONITOR)
+    temp_fixer = agents.TempFixer(agents_container, gatekeeper.addr, MONITOR)
+    fan_fixer = agents.FanFixer(agents_container, gatekeeper.addr, MONITOR)
     connection_fixer = agents.ConnectionFixer(agents_container, gatekeeper.addr, MONITOR)
 
     # register agents to cluster
