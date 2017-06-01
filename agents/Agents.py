@@ -73,7 +73,7 @@ class CpuFixer(BaseFixer):
 
     @aiomas.expose
     def flag_issue(self, cluster, host, problem):
-        print(cluster, host, problem)
+        print(self.__class__.__name__, cluster, host, problem)
 
     async def propose_fix(self, cluster_id, host_id):
         pass

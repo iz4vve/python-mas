@@ -1,23 +1,28 @@
+import os
 from pyswip.easy import *
 from pyswip.prolog import Prolog
+
+from util.tools import get_logger
+LOG = get_logger(__name__)
 
 
 class SWIPInterface(object):
     __prolog = Prolog()
     __instance = None
     __knowledge = {
-        "cpu": "agent_logic/cpu.pl",
-        "mem": "agent_logic/mem.pl",
-        "disk": "agent_logic/disk.pl",
-        "io": "agent_logic/io.pl",
-        "temp": "agent_logic/temp.pl",
-        "fan": "agent_logic/fan.pl",
-        "network": "agent_logic/network.pl"
+        "cpu": "agents/agent_logic/cpu.pl",
+        "mem": "agents/agent_logic/mem.pl",
+        "disk": "agents/agent_logic/disk.pl",
+        "io": "agents/agent_logic/io.pl",
+        "temp": "agents/agent_logic/temp.pl",
+        "fan": "agents/agent_logic/fan.pl",
+        "network": "agents/agent_logic/network.pl"
     }
 
     # singleton
     def __new__(cls):
         if cls.__instance is None:
+            LOG.info("Instantiating interface layer for LOGIC")
             cls.__instance = object.__new__(cls)
         return cls.__instance
 
@@ -25,8 +30,11 @@ class SWIPInterface(object):
         self._get_knowledge()
 
     def _get_knowledge(self):
+        cwd = os.getcwd()
         for _, module_path in self.__knowledge.items():
-            self.__prolog.consult(module_path)
+            knowledge = os.path.join(cwd, module_path)
+            LOG.info("Gaining knowledge from %s", knowledge)
+            self.__prolog.consult(knowledge)
 
 """
 from pyswip.prolog import Prolog
