@@ -162,6 +162,12 @@ class ClusterSimulator(object):
         for host_id, ping in unpingable:
             aiomas.run(self.flag_unpingable(host_id))
 
+    async def ping_request(self, host_id):
+        try:
+            return self.__hosts[host_id].pong()
+        except KeyError:
+            LOG.error("Host %s is not in cluster %s", host_id, self.unique_id)
+
     def test_ssh(self):
         not_sshable = filter(lambda x: not x[1], [(host_id, self.ping(host_id)) for host_id in self.__hosts])
         for host_id, ssh in not_sshable:

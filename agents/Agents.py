@@ -25,9 +25,11 @@ Email: pietro_mascolo@optum.com
 import abc
 import aiomas
 
+from agents.LogicInterface import SWIPInterface
 from util.tools import get_logger
 
 LOG = get_logger(__name__)
+LOGIC = SWIPInterface()
 
 
 class BaseFixer(aiomas.Agent):
