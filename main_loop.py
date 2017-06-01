@@ -1,19 +1,51 @@
 import sys
 assert sys.version_info >= (3, 6), \
     "Python 3.6 (or above) is required to run the project"
+import threading
 
 import aiomas
 import environment.Env as Env
+import agents.Agents as agents
 from util.tools import get_logger
 
 LOG = get_logger(__name__)
-MONITOR = dict()
+
+
+class Monitor(dict):  # let's make dict thread-safe
+
+    def __setitem__(self, key, value):
+        with threading.Lock():
+            super().__setitem__(key, value)
+
+MONITOR = Monitor()
 
 
 def main():
     global MONITOR
     cluster = Env.ClusterSimulator("ESX0001", MONITOR)
     cluster.add_host("host01")
+
+    # containers
+    agents_container = aiomas.Container.create(("localhost", 5555))
+
+    # agents
+    gatekeeper = agents.Gatekeeper(agents_container)
+    cpu_fixer = agents.CpuFixer(agents_container, gatekeeper.addr, MONITOR)
+    mem_fixer = agents.CpuFixer(agents_container, gatekeeper.addr, MONITOR)
+    disk_fixer = agents.CpuFixer(agents_container, gatekeeper.addr, MONITOR)
+    io_fixer = agents.CpuFixer(agents_container, gatekeeper.addr, MONITOR)
+    temp_fixer = agents.CpuFixer(agents_container, gatekeeper.addr, MONITOR)
+    fan_fixer = agents.CpuFixer(agents_container, gatekeeper.addr, MONITOR)
+
+    # register agents
+    cluster.register_fixer("cpu", cpu_fixer.addr)
+    cluster.register_fixer("mem", mem_fixer.addr)
+    cluster.register_fixer("disk", disk_fixer.addr)
+    cluster.register_fixer("io", io_fixer.addr)
+    cluster.register_fixer("temp", temp_fixer.addr)
+    cluster.register_fixer("fan", fan_fixer.addr)
+
+
 
 
 # def main():
