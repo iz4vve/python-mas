@@ -153,8 +153,10 @@ class ClusterSimulator(object):
         self.check_telemetry()
         self.handle_problems()
 
-    async def bounce(self, host_id):
-        pass
+    @staticmethod
+    async def bounce(host_id):
+        ret = "Host %s bounced" if random.random < 0.9 else "Host %s not bounced: solution not feasible"
+        LOG.info(ret, host_id) # TODO add similar methods to cope with other issues
 
 
 class TelemetryError(Exception):
