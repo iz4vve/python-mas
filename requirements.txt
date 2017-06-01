@@ -1,1 +1,2 @@
+pyswip
 aiomas>=1.00
