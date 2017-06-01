@@ -110,7 +110,7 @@ class ClusterSimulator(object):
 
     def collect_telemetry(self):
         self.__current_telemetry = {
-            host_id: host.telemetry() for host_id, host in self.__hosts.items()
+            host_id: host.telemetry() for host_id, host in random.sample(self.__hosts.items(), len(self.__hosts))
         }
 
     def get_host_telemetry(self, host_id):
