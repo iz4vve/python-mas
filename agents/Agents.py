@@ -72,8 +72,9 @@ class BaseFixer(aiomas.Agent):
 
 class CpuFixer(BaseFixer):
 
+    @aiomas.expose
     def flag_issue(self, cluster, host, problem):
-        pass
+        print(cluster, host, problem)
 
     async def propose_fix(self, cluster_id, host_id):
         pass
@@ -81,8 +82,9 @@ class CpuFixer(BaseFixer):
 
 class MemFixer(BaseFixer):
 
+    @aiomas.expose
     def flag_issue(self, cluster, host, problem):
-        pass
+        print(self.__class__.__name__, cluster, host, problem)
 
     async def propose_fix(self, cluster_id, host_id):
         pass
@@ -90,8 +92,9 @@ class MemFixer(BaseFixer):
 
 class DiskFixer(BaseFixer):
 
+    @aiomas.expose
     def flag_issue(self, cluster, host, problem):
-        pass
+        print(self.__class__.__name__, cluster, host, problem)
 
     async def propose_fix(self, cluster_id, host_id):
         pass
@@ -99,8 +102,9 @@ class DiskFixer(BaseFixer):
 
 class IOFixer(BaseFixer):
 
+    @aiomas.expose
     def flag_issue(self, cluster, host, problem):
-        pass
+        print(self.__class__.__name__, cluster, host, problem)
 
     async def propose_fix(self, cluster_id, host_id):
         pass
@@ -108,8 +112,9 @@ class IOFixer(BaseFixer):
 
 class TempFixer(BaseFixer):
 
+    @aiomas.expose
     def flag_issue(self, cluster, host, problem):
-        pass
+        print(self.__class__.__name__, cluster, host, problem)
 
     async def propose_fix(self, cluster_id, host_id):
         pass
@@ -117,8 +122,9 @@ class TempFixer(BaseFixer):
 
 class FanFixer(BaseFixer):
 
+    @aiomas.expose
     def flag_issue(self, cluster, host, problem):
-        pass
+        print(self.__class__.__name__, cluster, host, problem)
 
     async def propose_fix(self, cluster_id, host_id):
         pass
@@ -126,15 +132,26 @@ class FanFixer(BaseFixer):
 
 class ConnectionFixer(BaseFixer):
 
+    @aiomas.expose
     def flag_issue(self, cluster, host, problem):
-        pass
+        print(self.__class__.__name__, cluster, host, problem)
 
     async def propose_fix(self, cluster_id, host_id):
         pass
 
 
 class Gatekeeper(aiomas.Agent):
+    """
+    This extra layer is to ideally handle multiple similar requests
+    so that the cluster monitor does not get flooded with the same request
+    over and over.
+    """
 
+    def __init__(self, container):
+        super().__init__(container)
+        self.__queue = list()  # it's not a pure queue, there will be random accesses
+
+    @aiomas.expose
     def flag_issue(self, cluster, host, problem):
         pass
 
