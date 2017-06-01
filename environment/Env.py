@@ -60,7 +60,7 @@ class ClusterSimulator(object):
         self.__problems = dict()
         self.__agents = dict()
         self.__current_telemetry = dict()
-        self.__threshold_high = 85
+        self.__threshold_high = 90
         self.__threshold_low = 5
         self.agents_container = agents_container
         self.monitor = monitor
@@ -128,7 +128,10 @@ class ClusterSimulator(object):
         for host_id, telemetry in self.__current_telemetry.items():
             for key, value in telemetry:
                 if value < self.__threshold_low or value > self.__threshold_high:
-                    problems += [(host_id, key, value)]
+                    prbl = [(host_id, key, max(value, 100))]
+                    problems += prbl
+                    # the distribution can technically go ever 100...
+                    LOG.warning("Problem detected in cluster %s: %s", self.unique_id, prbl)
         self.__problems = problems
 
     def get_agent(self, agent_type):
