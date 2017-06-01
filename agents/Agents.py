@@ -25,9 +25,7 @@ It the solution is deemed feasible, it is implemented and sent to the cluster
 Author: Pietro
 Email: pietro_mascolo@optum.com
 """
-import ctypes
-import json
-import random
+import abc
 import aiomas
 
 from util.tools import get_logger
@@ -35,41 +33,86 @@ from util.tools import get_logger
 LOG = get_logger(__name__)
 
 
-class BaseFixer(aiomas.agent):
+class BaseFixer(aiomas.agent, metaclass=abc.ABCMeta):
 
-    def __init__(self, container, gatekeeper_address):
+    def __init__(self, container, gatekeeper_address, cluster_monitor):
         super().__init__(container)
         # list of (cluster_id, host_id, problem_type, problem)
         self.__problems = list()
         self.__gatekeeper = gatekeeper_address
+        self.cluster_monitor = cluster_monitor
+
+    @abc.abstractmethod
+    @aiomas.expose
+    def flag_issue(self, cluster, host, problem):
+        pass
+
+    @abc.abstractmethod
+    def propose_fix(self, cluster_id, host_id):
+        pass
 
 
 class CpuFixer(BaseFixer):
-    pass
+
+    def flag_issue(self, cluster, host, problem):
+        pass
+
+    def propose_fix(self, cluster_id, host_id):
+        pass
 
 
 class MemFixer(BaseFixer):
-    pass
+
+    def flag_issue(self, cluster, host, problem):
+        pass
+
+    def propose_fix(self, cluster_id, host_id):
+        pass
 
 
 class DiskFixer(BaseFixer):
-    pass
+
+    def flag_issue(self, cluster, host, problem):
+        pass
+
+    def propose_fix(self, cluster_id, host_id):
+        pass
 
 
 class IOFixer(BaseFixer):
-    pass
+
+    def flag_issue(self, cluster, host, problem):
+        pass
+
+    def propose_fix(self, cluster_id, host_id):
+        pass
 
 
 class TempFixer(BaseFixer):
-    pass
+
+    def flag_issue(self, cluster, host, problem):
+        pass
+
+    def propose_fix(self, cluster_id, host_id):
+        pass
 
 
 class FanFixer(BaseFixer):
-    pass
+
+    def flag_issue(self, cluster, host, problem):
+        pass
+
+    def propose_fix(self, cluster_id, host_id):
+        pass
 
 
 class Gatekeeper(aiomas.agent):
-    pass
+
+    def flag_issue(self, cluster, host, problem):
+        pass
+
+    def propose_fix(self, cluster_id, host_id):
+        pass
 
 
 # class BaseAgent(aiomas.Agent):
