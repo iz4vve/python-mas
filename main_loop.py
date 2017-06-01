@@ -23,9 +23,14 @@ MONITOR = Monitor()
 
 def run_cluster():
     global MONITOR
+    start = time.time()
     for cluster in MONITOR:
         time.sleep(1)
         cluster.step_cluster()
+        if not int(time.time() - start) % 10:
+            cluster.ping_all()
+        if not int(time.time() - start) % 30:
+            cluster.test_ssh()
 
 
 def main():
@@ -44,6 +49,7 @@ def main():
     io_fixer = agents.CpuFixer(agents_container, gatekeeper.addr, MONITOR)
     temp_fixer = agents.CpuFixer(agents_container, gatekeeper.addr, MONITOR)
     fan_fixer = agents.CpuFixer(agents_container, gatekeeper.addr, MONITOR)
+    connection_fixer = agents.ConnectionFixer(agents_container, gatekeeper.addr, MONITOR)
 
     # register agents to cluster
     cluster.register_fixer("cpu", cpu_fixer.addr)
@@ -52,6 +58,7 @@ def main():
     cluster.register_fixer("io", io_fixer.addr)
     cluster.register_fixer("temp", temp_fixer.addr)
     cluster.register_fixer("fan", fan_fixer.addr)
+    cluster.register_fixer("connection", connection_fixer.addr)
 
 
 

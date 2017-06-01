@@ -40,7 +40,25 @@ class BaseFixer(aiomas.Agent):
         # list of (cluster_id, host_id, problem_type, problem)
         self.__problems = list()
         self.__gatekeeper = gatekeeper_address
+        self.__agents = dict()
         self.cluster_monitor = cluster_monitor
+        self.__register_agents()
+
+    def __register_agents(self):
+        self.__agents = {
+            "cpu": CpuFixer,
+            "mem": MemFixer,
+            "disk": DiskFixer,
+            "io": IOFixer,
+            "temp": TempFixer,
+            "fan": FanFixer
+        }
+
+    def builder(self, agent_type):
+        try:
+            return self.__agents[agent_type]
+        except KeyError:
+            LOG.error("Invalid agent type: %s", agent_type)
 
     @abc.abstractmethod
     @aiomas.expose
@@ -48,7 +66,7 @@ class BaseFixer(aiomas.Agent):
         pass
 
     @abc.abstractmethod
-    def propose_fix(self, cluster_id, host_id):
+    async def propose_fix(self, cluster_id, host_id):
         pass
 
 
@@ -57,7 +75,7 @@ class CpuFixer(BaseFixer):
     def flag_issue(self, cluster, host, problem):
         pass
 
-    def propose_fix(self, cluster_id, host_id):
+    async def propose_fix(self, cluster_id, host_id):
         pass
 
 
@@ -66,7 +84,7 @@ class MemFixer(BaseFixer):
     def flag_issue(self, cluster, host, problem):
         pass
 
-    def propose_fix(self, cluster_id, host_id):
+    async def propose_fix(self, cluster_id, host_id):
         pass
 
 
@@ -75,7 +93,7 @@ class DiskFixer(BaseFixer):
     def flag_issue(self, cluster, host, problem):
         pass
 
-    def propose_fix(self, cluster_id, host_id):
+    async def propose_fix(self, cluster_id, host_id):
         pass
 
 
@@ -84,7 +102,7 @@ class IOFixer(BaseFixer):
     def flag_issue(self, cluster, host, problem):
         pass
 
-    def propose_fix(self, cluster_id, host_id):
+    async def propose_fix(self, cluster_id, host_id):
         pass
 
 
@@ -93,7 +111,7 @@ class TempFixer(BaseFixer):
     def flag_issue(self, cluster, host, problem):
         pass
 
-    def propose_fix(self, cluster_id, host_id):
+    async def propose_fix(self, cluster_id, host_id):
         pass
 
 
@@ -102,7 +120,16 @@ class FanFixer(BaseFixer):
     def flag_issue(self, cluster, host, problem):
         pass
 
-    def propose_fix(self, cluster_id, host_id):
+    async def propose_fix(self, cluster_id, host_id):
+        pass
+
+
+class ConnectionFixer(BaseFixer):
+
+    def flag_issue(self, cluster, host, problem):
+        pass
+
+    async def propose_fix(self, cluster_id, host_id):
         pass
 
 
@@ -111,7 +138,7 @@ class Gatekeeper(aiomas.Agent):
     def flag_issue(self, cluster, host, problem):
         pass
 
-    def propose_fix(self, cluster_id, host_id):
+    async def propose_fix(self, cluster_id, host_id):
         pass
 
 

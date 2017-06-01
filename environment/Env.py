@@ -54,7 +54,7 @@ class Host(object):
 
 class ClusterSimulator(object):
 
-    def __init__(self, unique_id, monitor):
+    def __init__(self, unique_id, monitor, agents_container):
         self.unique_id = unique_id
         self.__hosts = dict()
         self.__callbacks = dict()
@@ -63,6 +63,7 @@ class ClusterSimulator(object):
         self.__current_telemetry = dict()
         self.__threshold_high = 99
         self.__threshold_low = 5
+        self.agents_container = agents_container
         self.monitor = monitor
 
     def register(self, name, callback):
@@ -144,14 +145,45 @@ class ClusterSimulator(object):
         for host_id, problem_type, problem in self.__problems:
             try:
                 agent = self.get_agent(problem_type)
+                self.flag_problem(agent, host_id, problem)
             except KeyError:
                 LOG.error("ERROR: agent %s not registered in cluster %s. Ignoring problem...", problem_type, self.unique_id)
         # TODO handle problems
+
+    async def flag_problem(self, _agent, host_id, problem):
+        agent = await self.agents_container.connect(_agent)
+        res = await agent.flag_issue(self.unique_id, host_id, problem)
 
     def step_cluster(self):
         self.collect_telemetry()
         self.check_telemetry()
         self.handle_problems()
+
+    def ping_all(self):
+        unpingable = filter(lambda x: not x[1], [(host_id, self.ping(host_id)) for host_id in self.__hosts])
+        for host_id, ping in unpingable:
+            self.flag_unpingable(host_id)
+
+    def test_ssh(self):
+        not_sshable = filter(lambda x: not x[1], [(host_id, self.ping(host_id)) for host_id in self.__hosts])
+        for host_id, ssh in not_sshable:
+            self.flag_not_sshable(host_id)
+
+    async def flag_unpingable(self, host_id):
+        try:
+            agent = await self.agents_container.connect(self.__agents["connection"])
+        except KeyError:
+            LOG.error("ERROR: No appropriate agent is registered for network monitoring in cluster %s", self.unique_id)
+        else:
+            res = await agent.flag_issue(self.unique_id, host_id, "ping")
+
+    async def flag_not_sshable(self, host_id):
+        try:
+            agent = await self.agents_container.connect(self.__agents["connection"])
+        except KeyError:
+            LOG.error("ERROR: No appropriate agent is registered for network monitoring in cluster %s", self.unique_id)
+        else:
+            res = await agent.flag_issue(self.unique_id, host_id, "ssh")
 
     @staticmethod
     async def bounce(host_id):
