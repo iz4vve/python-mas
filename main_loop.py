@@ -1,6 +1,7 @@
 import sys
 assert sys.version_info >= (3, 6), \
     "Python 3.6 (or above) is required to run the project"
+import random
 import threading
 import time
 
@@ -26,7 +27,7 @@ def run_cluster():
     global MONITOR
     ticker = 0
     while True:
-        for _id, cluster in MONITOR.items():
+        for _id, cluster in random.sample(MONITOR.items(), len(MONITOR)):
             ticker += 1
             time.sleep(.5)
             print("tick")
