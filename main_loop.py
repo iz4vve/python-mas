@@ -24,22 +24,28 @@ MONITOR = Monitor()
 def run_cluster():
     global MONITOR
     start = time.time()
-    for cluster in MONITOR:
-        time.sleep(1)
-        cluster.step_cluster()
-        if not int(time.time() - start) % 10:
-            cluster.ping_all()
-        if not int(time.time() - start) % 30:
-            cluster.test_ssh()
+    while True:
+        for _id, cluster in MONITOR.items():
+            time.sleep(1)
+            print("step")
+            cluster.step_cluster()
+            if not int(time.time() - start) % 10:
+                print("Ping")
+                cluster.ping_all()
+            if not int(time.time() - start) % 30:
+                print("SSH")
+                cluster.test_ssh()
 
 
 def main():
     global MONITOR
-    cluster = Env.ClusterSimulator("ESX0001", MONITOR)
-    cluster.add_host("host01")
 
     # containers
     agents_container = aiomas.Container.create(("localhost", 5555))
+
+    # cluster
+    cluster = Env.ClusterSimulator("ESX0001", MONITOR, agents_container)
+    cluster.add_host("host01")
 
     # agents instantiation
     gatekeeper = agents.Gatekeeper(agents_container)
@@ -60,8 +66,16 @@ def main():
     cluster.register_fixer("fan", fan_fixer.addr)
     cluster.register_fixer("connection", connection_fixer.addr)
 
+    MONITOR[cluster.unique_id] = cluster
+
+    try:
+        aiomas.run(until=run_cluster())
+    except KeyboardInterrupt:
+        LOG.info("Received SIGKILL, shutting down...")
 
 
+if __name__ == '__main__':
+    main()
 
 
 
