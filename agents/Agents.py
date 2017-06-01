@@ -1,18 +1,15 @@
 """
 Base agents for MAS demo.
 
-MonitorAgent
+Fixer Agents
 ------------
-It monitors one or more ESX Clusters. It handles event sent by the
-cluster when problems are detected.
-It then requests a fix from a Fixer Agent and keeps listening for further events
-
-Fixer Agent
------------
 It reacts to requests coming from a Monitor Agent and verifies if it knows how
 to handle the problem based on its registered callbacks. If it has an
 appropriate handler for the problem, it then dispatches the callback to a
-Gatekeeper Agent
+Gatekeeper Agent.
+
+Each agent is specialised in handling a particular type of issue and should
+only receive that
 
 Gatekeeper Agent
 ----------------
@@ -147,15 +144,20 @@ class Gatekeeper(aiomas.Agent):
     over and over.
     """
 
-    def __init__(self, container):
+    def __init__(self, container, cluster_monitor):
         super().__init__(container)
         self.__queue = list()  # it's not a pure queue, there will be random accesses
+        self.monitor = cluster_monitor
 
     @aiomas.expose
     def flag_issue(self, cluster, host, problem):
         pass
 
     async def propose_fix(self, cluster_id, host_id):
+        pass
+
+    def is_feasible(self):
+        # check queue
         pass
 
 

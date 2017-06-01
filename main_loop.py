@@ -5,6 +5,7 @@ import threading
 import time
 
 import aiomas
+
 import environment.Env as Env
 import agents.Agents as agents
 from util.tools import get_logger
@@ -23,16 +24,17 @@ MONITOR = Monitor()
 
 def run_cluster():
     global MONITOR
-    start = time.time()
+    ticker = 0
     while True:
         for _id, cluster in MONITOR.items():
-            time.sleep(1)
-            print("step")
+            ticker += 1
+            time.sleep(.5)
+            print("tick")
             cluster.step_cluster()
-            if not int(time.time() - start) % 10:
-                print("Ping")
+            if not ticker % 10:
+                print("PING")
                 cluster.ping_all()
-            if not int(time.time() - start) % 30:
+            if not ticker % 30:
                 print("SSH")
                 cluster.test_ssh()
 
@@ -48,7 +50,7 @@ def main():
     cluster.add_host("host01")
 
     # agents instantiation
-    gatekeeper = agents.Gatekeeper(agents_container)
+    gatekeeper = agents.Gatekeeper(agents_container, MONITOR)
     cpu_fixer = agents.CpuFixer(agents_container, gatekeeper.addr, MONITOR)
     mem_fixer = agents.CpuFixer(agents_container, gatekeeper.addr, MONITOR)
     disk_fixer = agents.CpuFixer(agents_container, gatekeeper.addr, MONITOR)
@@ -76,38 +78,6 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-
-# def main():
-#     num_hosts = 10000
-#
-#     cluster_container = aiomas.Container.create(("localhost", 5554))
-#     agents_container = aiomas.Container.create(('localhost', 5555))
-#
-#     gatekeeper = GateKeeper(agents_container)
-#     fixer = FixerAgent(agents_container, gatekeeper.addr)
-#     monitor = MonitorAgent(agents_container, fixer.addr)
-#
-#     callbacks = {
-#         "cpu": callback.cpu,
-#         "mem": callback.mem,
-#         "disk": callback.disk,
-#         "fan": callback.cpu,
-#         "io": callback.io,
-#         "pingable": callback.not_pingable,
-#         "sshable": callback.not_sshable
-#     }
-#     fixer.batch_register(callbacks)
-#
-#     cluster = Env.ClusterTelemetryAgent(cluster_container, num_hosts, monitor)
-#
-#     try:
-#         LOG.info("Spawning agents")
-#         LOG.info(f"Starting Telemetry Agent: {repr(cluster)}")
-#         aiomas.run(until=cluster.run_cluster())
-#     except KeyboardInterrupt:
-#         LOG.info("Received SIGKILL, shutting down gently...")
 
 
 ###############################################################################

@@ -81,7 +81,6 @@ class ClusterSimulator(object):
         if host_id not in self.__hosts:
             LOG.debug("Adding host %s to cluster %s",host_id, self.unique_id)
             self.__hosts[host_id] = Host(host_id)
-        # self.__hosts.add(host)
 
     def pop_host(self, host_id):
         try:
