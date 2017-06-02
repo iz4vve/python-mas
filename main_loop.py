@@ -58,7 +58,11 @@ def main():
     io_fixer = agents.IOFixer(agents_container, gatekeeper.addr, MONITOR)
     temp_fixer = agents.TempFixer(agents_container, gatekeeper.addr, MONITOR)
     fan_fixer = agents.FanFixer(agents_container, gatekeeper.addr, MONITOR)
-    connection_fixer = agents.ConnectionFixer(agents_container, gatekeeper.addr, MONITOR)
+    connection_fixer = agents.ConnectionFixer(
+        agents_container,
+        gatekeeper.addr,
+        MONITOR
+    )
 
     # register agents to cluster
     cluster.register_fixer("cpu", cpu_fixer.addr)
@@ -78,9 +82,12 @@ def main():
 
 
 if __name__ == '__main__':
+    import datetime
+    start = datetime.datetime.now()
+    LOG.info("Starting main event loop")
     main()
-
+    LOG.info(
+        "Main event loop terminated after: %s", datetime.datetime.now() - start
+    )
 
 ###############################################################################
-if __name__ == '__main__':
-    main()
