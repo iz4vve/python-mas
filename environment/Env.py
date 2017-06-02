@@ -5,11 +5,8 @@ A random component has been added to simulate random breaks in the machine.
 Author: Pietro Mascolo
 Email: pietro_mascolo@optum.com
 """
-import json
 import numpy as np
 import random
-import time
-import uuid
 
 import aiomas
 
@@ -41,11 +38,13 @@ class Host(object):
 
     @staticmethod
     def pong():
-        return True if random.random() < 0.9999 else False  # there is a slim chance of non-pingability
+        # there is a slim chance of non-pingability
+        return True if random.random() < 0.9999 else False
 
     @staticmethod
     def ssh_ack():
-        return True if random.random() < 0.99 else False  # there is a slim chance of non-sshability
+        # there is a slim chance of non-sshability
+        return True if random.random() < 0.99 else False
 
     def reboot(self):
         LOG.critical("Bouncing host %s", self.unique_id)
@@ -74,7 +73,9 @@ class ClusterSimulator(object):
 
     def register_fixer(self, agent_type, agent_address):
         if agent_type not in self.__agents:
-            LOG.debug("Adding agent %s to cluster %s", agent_type, agent_address)
+            LOG.debug(
+                "Adding agent %s to cluster %s", agent_type, agent_address
+            )
             self.__agents[agent_type] = agent_address
 
     def add_host(self, host_id):
@@ -94,7 +95,9 @@ class ClusterSimulator(object):
         except KeyError:
             LOG.error("Host %s is not in cluster %s", host_id, self.unique_id)
         except PingError:
-            LOG.error("Cannot ping host %s in cluster %s", host_id, self.unique_id)
+            LOG.error(
+                "Cannot ping host %s in cluster %s", host_id, self.unique_id
+            )
             return False
         return False
 
@@ -104,13 +107,18 @@ class ClusterSimulator(object):
         except KeyError:
             LOG.error("Host %s is not in cluster %s", host_id, self.unique_id)
         except SSHError:
-            LOG.error("Cannot ssh host %s in cluster %s", host_id, self.unique_id)
+            LOG.error(
+                "Cannot ssh host %s in cluster %s", host_id, self.unique_id
+            )
             return False
         return False
 
     def collect_telemetry(self):
         self.__current_telemetry = {
-            host_id: host.telemetry() for host_id, host in random.sample(self.__hosts.items(), len(self.__hosts))
+            host_id: host.telemetry()
+            for host_id, host in random.sample(
+                self.__hosts.items(), len(self.__hosts)
+            )
         }
 
     def get_host_telemetry(self, host_id):
@@ -119,7 +127,11 @@ class ClusterSimulator(object):
         except KeyError:
             LOG.error("Host %s is not in cluster %s", host_id, self.unique_id)
         except TelemetryError:
-            LOG.error("Cluster %s reports no telemetry available for host %s ", self.unique_id, host_id)
+            LOG.error(
+                "Cluster %s reports no telemetry available for host %s ",
+                self.unique_id,
+                host_id
+            )
             return None
         return None
 
@@ -131,7 +143,11 @@ class ClusterSimulator(object):
                     prbl = [(host_id, key, max(value, 100))]
                     problems += prbl
                     # the distribution can technically go ever 100...
-                    LOG.warning("Problem detected in cluster %s: %s", self.unique_id, prbl)
+                    LOG.warning(
+                        "Problem detected in cluster %s: %s",
+                        self.unique_id,
+                        prbl
+                    )
         self.__problems = problems
 
     def get_agent(self, agent_type):
@@ -140,7 +156,9 @@ class ClusterSimulator(object):
     def handle_problems(self):
         # parse and send to fixers
         if not self.__problems:
-            LOG.debug("No problems found in hosts in cluster %s", self.unique_id)
+            LOG.debug(
+                "No problems found in hosts in cluster %s", self.unique_id
+            )
             return
         # send report to agents
         for host_id, problem_type, problem in self.__problems:
@@ -148,7 +166,11 @@ class ClusterSimulator(object):
                 agent = self.get_agent(problem_type)
                 aiomas.run(self.flag_problem(agent, host_id, problem))
             except KeyError:
-                LOG.error("ERROR: agent %s not registered in cluster %s. Ignoring problem...", problem_type, self.unique_id)
+                LOG.error(
+                    "ERROR: agent %s not registered in cluster %s.",
+                    problem_type,
+                    self.unique_id
+                )
         # TODO handle problems
 
     async def flag_problem(self, _agent, host_id, problem):
@@ -161,7 +183,10 @@ class ClusterSimulator(object):
         self.handle_problems()
 
     def ping_all(self):
-        unpingable = filter(lambda x: not x[1], [(host_id, self.ping(host_id)) for host_id in self.__hosts])
+        unpingable = filter(
+            lambda x: not x[1],
+            [(host_id, self.ping(host_id)) for host_id in self.__hosts]
+        )
         for host_id, ping in unpingable:
             aiomas.run(self.flag_unpingable(host_id))
 
@@ -172,30 +197,39 @@ class ClusterSimulator(object):
             LOG.error("Host %s is not in cluster %s", host_id, self.unique_id)
 
     def test_ssh(self):
-        not_sshable = filter(lambda x: not x[1], [(host_id, self.ping(host_id)) for host_id in self.__hosts])
+        not_sshable = filter(
+            lambda x: not x[1],
+            [(host_id, self.ping(host_id)) for host_id in self.__hosts]
+        )
         for host_id, ssh in not_sshable:
             aiomas.run(self.flag_not_sshable(host_id))
 
     async def flag_unpingable(self, host_id):
         try:
-            agent = await self.agents_container.connect(self.__agents["connection"])
+            agent = await self.agents_container.connect(
+                self.__agents["connection"]
+            )
         except KeyError:
-            LOG.error("ERROR: No appropriate agent is registered for network monitoring in cluster %s", self.unique_id)
+            LOG.error("ERROR: No network agent in cluster %s", self.unique_id)
         else:
             res = await agent.flag_issue(self.unique_id, host_id, "ping")
 
     async def flag_not_sshable(self, host_id):
         try:
-            agent = await self.agents_container.connect(self.__agents["connection"])
+            agent = await self.agents_container.connect(
+                self.__agents["connection"]
+            )
         except KeyError:
-            LOG.error("ERROR: No appropriate agent is registered for network monitoring in cluster %s", self.unique_id)
+            LOG.error("ERROR: No network agent in cluster %s", self.unique_id)
         else:
             res = await agent.flag_issue(self.unique_id, host_id, "ssh")
 
     @staticmethod
     async def bounce(host_id):
-        ret = "Host %s bounced" if random.random < 0.9 else "Host %s not bounced: solution not feasible"
-        LOG.info(ret, host_id) # TODO add similar methods to cope with other issues
+        ret = ("Host %s bounced" if random.random < 0.9
+               else "Host %s not bounced: solution not feasible")
+        LOG.info(ret, host_id)
+        # TODO add similar methods to cope with other issues
 
 
 class TelemetryError(Exception):
