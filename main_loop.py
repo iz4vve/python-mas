@@ -20,6 +20,9 @@ class Monitor(dict):  # let's make dict thread-safe
         with threading.Lock():
             super().__setitem__(key, value)
 
+    def register_cluster(self, cluster):
+        self.__dict__[cluster.unique_id] = cluster
+
 MONITOR = Monitor()
 
 
@@ -29,7 +32,7 @@ def run_cluster():
     while True:
         for _id, cluster in random.sample(MONITOR.items(), len(MONITOR)):
             ticker += 1
-            time.sleep(.5)
+            time.sleep(1)
             print("tick")
             cluster.step_cluster()
             if not ticker % 10:
@@ -46,9 +49,14 @@ def main():
     # containers
     agents_container = aiomas.Container.create(("localhost", 5555))
 
-    # cluster
-    cluster = Env.ClusterSimulator("ESX0001", MONITOR, agents_container)
-    cluster.add_host("host01")
+    # clusters
+    cluster1 = Env.ClusterSimulator("ESX0001", MONITOR, agents_container)
+    cluster2 = Env.ClusterSimulator("ESX0002", MONITOR, agents_container)
+    cluster1.add_host("host01")
+    cluster1.add_host("host02")
+    cluster2.add_host("host01")
+    cluster2.add_host("host02")
+    cluster2.add_host("host03")
 
     # agents instantiation
     gatekeeper = agents.Gatekeeper(agents_container, MONITOR)
@@ -65,15 +73,24 @@ def main():
     )
 
     # register agents to cluster
-    cluster.register_fixer("cpu", cpu_fixer.addr)
-    cluster.register_fixer("mem", mem_fixer.addr)
-    cluster.register_fixer("disk", disk_fixer.addr)
-    cluster.register_fixer("io", io_fixer.addr)
-    cluster.register_fixer("temp", temp_fixer.addr)
-    cluster.register_fixer("fan", fan_fixer.addr)
-    cluster.register_fixer("connection", connection_fixer.addr)
+    cluster1.register_fixer("cpu", cpu_fixer.addr)
+    cluster1.register_fixer("mem", mem_fixer.addr)
+    cluster1.register_fixer("disk", disk_fixer.addr)
+    cluster1.register_fixer("io", io_fixer.addr)
+    cluster1.register_fixer("temp", temp_fixer.addr)
+    cluster1.register_fixer("fan", fan_fixer.addr)
+    cluster1.register_fixer("connection", connection_fixer.addr)
 
-    MONITOR[cluster.unique_id] = cluster
+    cluster2.register_fixer("cpu", cpu_fixer.addr)
+    cluster2.register_fixer("mem", mem_fixer.addr)
+    cluster2.register_fixer("disk", disk_fixer.addr)
+    cluster2.register_fixer("io", io_fixer.addr)
+    cluster2.register_fixer("temp", temp_fixer.addr)
+    cluster2.register_fixer("fan", fan_fixer.addr)
+    cluster2.register_fixer("connection", connection_fixer.addr)
+
+    MONITOR[cluster1.unique_id] = cluster1
+    MONITOR[cluster2.unique_id] = cluster2
 
     try:
         aiomas.run(until=run_cluster())
