@@ -1,2 +1,3 @@
+numpy>=1.12
 pyswip
 aiomas>=1.00
