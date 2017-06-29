@@ -33,7 +33,7 @@ too_many_requests(Count, X) :-
     count_all_turn_off_requests(Turnoff),
     Bounce + Turnoff > X.
 
-% in surge if too many requests or not waited long enough
+% in surge if too many requests and not waited long enough
 in_surge(Actions, Timer) :-
     too_many_requests(Count, Actions)
     waited(Y), Y < Timer.
