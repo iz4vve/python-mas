@@ -7,6 +7,7 @@ Email: pietro_mascolo@optum.com
 """
 import numpy as np
 import random
+import time
 
 import aiomas
 
@@ -23,6 +24,8 @@ class Host(object):
         self.unique_id = unique_id
         self.fields = ("cpu", "mem", "disk", "io", "temp", "fan")
         self.initialize_metrics()
+        self.maintenance = False
+        self.maintenance_update = time.time()
 
     def initialize_metrics(self):
         for metric in self.fields:
@@ -34,6 +37,21 @@ class Host(object):
         )
         for metric, value in zip(self.fields, values):
             setattr(self, metric, value)
+
+        if not self.maintenance:
+            # if host is not in maintenance: 99.9% probability
+            # of remaining in steady state
+            maintenance_state = random.random() > 0.999
+        else:
+            # if host is in maintenance mode:
+            # 50% probability of coming out of it
+            maintenance_state = random.random() > 0.5
+
+        self.maintenance = maintenance_state
+        # track when a host goes in maintenance mode
+        if not self.maintenance:
+            self.maintenance_update = time.time()
+
         return zip(self.fields, values)
 
     @staticmethod
